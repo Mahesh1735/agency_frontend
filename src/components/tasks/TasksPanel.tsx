@@ -280,7 +280,7 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
         </div>
       )}
 
-      {task.status === 'completed' && task.results && (
+      {task.results && (
         <div className="space-y-4">
           {task.results.map(result => (
             <ResultTile key={result.id} result={result} />

@@ -29,7 +29,8 @@ const client = new DynamoDBClient({
   },
 });
 
-const docClient = DynamoDBDocumentClient.from(client);
+// Export the docClient so it can be used by other services
+export const docClient = DynamoDBDocumentClient.from(client);
 
 export interface Thread {
   id: string;
@@ -51,7 +52,7 @@ export const getUserThreads = async (userId: string): Promise<Thread[]> => {
       ExpressionAttributeValues: {
         ':userId': userId
       },
-      ScanIndexForward: false // This will sort by the sort key in descending order
+      ScanIndexForward: false
     };
 
     const command = new QueryCommand(params);
@@ -124,5 +125,25 @@ export const updateThread = async (threadId: string, updates: Partial<Thread>): 
   } catch (error) {
     console.error('Error updating thread:', error);
     throw new Error('Failed to update thread in DynamoDB');
+  }
+};
+
+export const createThreadForUser = async (userId: string, title: string): Promise<Thread> => {
+  const thread: Thread = {
+    id: uuidv4(),
+    userId,
+    title,
+    date: new Date().toISOString()
+  };
+
+  try {
+    await docClient.send(new PutCommand({
+      TableName: 'agency-thread_ids',
+      Item: thread
+    }));
+    return thread;
+  } catch (error) {
+    console.error('Error creating thread:', error);
+    throw new Error('Failed to create thread in DynamoDB');
   }
 }; 

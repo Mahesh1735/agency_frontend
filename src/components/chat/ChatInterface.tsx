@@ -20,7 +20,9 @@ interface ApiResponse {
 }
 
 interface ChatInterfaceProps {
-  onTasksUpdate?: (tasks: Record<string, any>) => void;
+  onTasksUpdate: (tasks: Record<string, any>) => void;
+  adminMode?: boolean;
+  userId?: string | null;
 }
 
 const WELCOME_MESSAGE = {
@@ -29,7 +31,11 @@ const WELCOME_MESSAGE = {
   content: 'Hello! 👋 I\'m your AI assistant. How can I help you today?'
 };
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ onTasksUpdate }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+  onTasksUpdate, 
+  adminMode = false,
+  userId = null 
+}) => {
   const { currentUser } = useAuth();
   const { threadId } = useParams();
   const navigate = useNavigate();
@@ -65,13 +71,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onTasksUpdate }) => {
       setMessageError(null);
       
       try {
-        const response = await fetch('http://127.0.0.1:8080/chat', {
+        const response = await fetch(`http://127.0.0.1:8080/${adminMode ? 'update_state' : 'chat'}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            query: '',
             thread_id: threadId
           }),
         });
@@ -108,7 +113,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onTasksUpdate }) => {
     };
 
     loadThreadMessages();
-  }, [threadId]);
+  }, [threadId, adminMode]);
 
   useEffect(() => {
     if (threadId) {
@@ -144,7 +149,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onTasksUpdate }) => {
 
     // Now make the API call with the guaranteed thread ID
     try {
-      const response = await fetch('http://127.0.0.1:8080/chat', {
+      const response = await fetch(`http://127.0.0.1:8080/${adminMode ? 'update_state' : 'chat'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
