@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ExternalLink, PlayCircle, Image as ImageIcon, FileText, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ExternalLink, PlayCircle, Image as ImageIcon, FileText, AlertCircle, CheckCircle, Download, Edit, Save, RotateCcw, Plus } from 'lucide-react';
 import TaskResultPopup from './TaskResultPopup';
+import { useParams } from 'react-router-dom';
 
 interface TaskResult {
   id: string;
@@ -22,12 +23,61 @@ interface Task {
 
 interface TasksPanelProps {
   tasks: Record<string, Task>;
+  adminMode?: boolean;
+  threadId?: string;
 }
-
-const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+const TaskCard: React.FC<{ 
+  task: Task; 
+  tasks: Record<string, Task>;
+  adminMode?: boolean; 
+  onTaskUpdate?: (taskId: string, updatedTask: Task) => void;
+  threadId?: string;
+}> = ({ task, tasks, adminMode, onTaskUpdate, threadId }) => {
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const [expandedArgs, setExpandedArgs] = useState(false);
   const [showCompletedArgs, setShowCompletedArgs] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTask, setEditedTask] = useState<Task>(task);
+  const [showResultPopup, setShowResultPopup] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<TaskResult | null>(null);
+
+  const handleStatusToggle = () => {
+    const updatedTask = {
+      ...editedTask,
+      status: editedTask.status === 'completed' ? 'processing' : 'completed'
+    };
+    setEditedTask(updatedTask);
+    onTaskUpdate?.(task.id, updatedTask);
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      const updatedTasks = {
+        ...tasks,
+        [task.id]: editedTask
+      };
+
+      const response = await fetch('http://127.0.0.1:8080/update_state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          thread_id: threadId,
+          tasks: updatedTasks
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      onTaskUpdate?.(task.id, editedTask);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
 
   const formatArgs = (args: Record<string, any>) => {
     const formatValue = (value: any) => {
@@ -67,7 +117,7 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
     );
   };
 
-  const ResultTile: React.FC<{ result: TaskResult }> = ({ result }) => {
+  const ResultTile: React.FC<{ result: TaskResult; adminMode?: boolean; onEdit?: () => void }> = ({ result, adminMode, onEdit }) => {
     const [showPopup, setShowPopup] = useState(false);
     const [activeMediaType, setActiveMediaType] = useState<'videos' | 'images' | 'documents'>('videos');
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -77,6 +127,21 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
       { type: 'images', urls: result.images_url, icon: <ImageIcon size={16} />, label: 'Images' },
       { type: 'documents', urls: result.documents_url, icon: <FileText size={16} />, label: 'Documents' }
     ] as const;
+
+    useEffect(() => {
+      // Find the first media type that has content
+      const availableTypes = mediaTypes.filter(({ urls }) => urls.length > 0);
+      if (availableTypes.length > 0) {
+        // If videos are available, show them first
+        const videos = availableTypes.find(({ type }) => type === 'videos');
+        if (videos) {
+          setActiveMediaType('videos');
+        } else {
+          // Otherwise show the first available type (images or documents)
+          setActiveMediaType(availableTypes[0].type);
+        }
+      }
+    }, [result]);
 
     const handleNext = (e: React.MouseEvent, urls: string[]) => {
       e.stopPropagation();
@@ -90,25 +155,37 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
 
     return (
       <>
-        {/* Original Result Tile */}
         <div 
           className="bg-gray-800 rounded-lg p-4 cursor-pointer"
           onClick={() => setShowPopup(true)}
         >
           <div className="flex justify-between items-start mb-2">
             <h4 className="font-medium text-lg line-clamp-2 flex-1 mr-4">{result.title}</h4>
-            {result.cta && (
-              <a 
-                href={result.cta}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-blue-400 hover:text-blue-300 flex-shrink-0"
-                onClick={e => e.stopPropagation()}
-              >
-                <ExternalLink size={16} />
-                <span>Open</span>
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              {adminMode && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.();
+                  }}
+                  className="flex items-center gap-1 text-gray-400 hover:text-blue-300"
+                >
+                  <Edit size={16} />
+                </button>
+              )}
+              {result.cta && (
+                <a 
+                  href={result.cta}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-blue-400 hover:text-blue-300 flex-shrink-0"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <ExternalLink size={16} />
+                  <span>Open</span>
+                </a>
+              )}
+            </div>
           </div>
           
           <p className="text-gray-300 mb-4 line-clamp-3">{result.body}</p>
@@ -215,8 +292,7 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
           ))}
         </div>
 
-        {/* Popup View */}
-        {showPopup && (
+        {showPopup && !adminMode && (
           <TaskResultPopup 
             result={result} 
             onClose={() => setShowPopup(false)} 
@@ -224,6 +300,46 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
         )}
       </>
     );
+  };
+
+  const handleAddResult = () => {
+    const newResult = {
+      id: crypto.randomUUID(),
+      title: '',
+      body: '',
+      images_url: [],
+      videos_url: [],
+      documents_url: [],
+      cta: ''
+    };
+    setSelectedResult(newResult);
+    setShowResultPopup(true);
+  };
+
+  const handleEditResult = (result: TaskResult) => {
+    setSelectedResult(result);
+    setShowResultPopup(true);
+  };
+
+  const handleSaveResult = (updatedResult: TaskResult) => {
+    const updatedResults = editedTask.results || [];
+    const index = updatedResults.findIndex(r => r.id === updatedResult.id);
+    
+    if (index >= 0) {
+      updatedResults[index] = updatedResult;
+    } else {
+      updatedResults.push(updatedResult);
+    }
+    
+    const updatedTask = {
+      ...editedTask,
+      results: updatedResults
+    };
+    
+    setEditedTask(updatedTask);
+    onTaskUpdate?.(task.id, updatedTask);
+    setShowResultPopup(false);
+    setSelectedResult(null);
   };
 
   return (
@@ -283,23 +399,85 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
       {task.results && (
         <div className="space-y-4">
           {task.results.map(result => (
-            <ResultTile key={result.id} result={result} />
+            <ResultTile 
+              key={result.id} 
+              result={result} 
+              adminMode={adminMode}
+              onEdit={() => handleEditResult(result)}
+            />
           ))}
         </div>
+      )}
+
+      {adminMode && (
+        <div className="mt-4 flex items-center gap-3 border-t border-gray-800 pt-4">
+          <button
+            onClick={handleStatusToggle}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+          >
+            <RotateCcw size={16} />
+            <span>Toggle Status</span>
+          </button>
+          <button
+            onClick={handleAddResult}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+          >
+            <Plus size={16} />
+            <span>Add Result</span>
+          </button>
+          <button
+            onClick={handleSaveChanges}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors ml-auto"
+          >
+            <Save size={16} />
+            <span>Save Changes</span>
+          </button>
+        </div>
+      )}
+
+      {showResultPopup && selectedResult && (
+        <TaskResultPopup 
+          result={selectedResult}
+          onClose={() => {
+            setShowResultPopup(false);
+            setSelectedResult(null);
+          }}
+          editable={adminMode}
+          onSave={handleSaveResult}
+        />
       )}
     </div>
   );
 };
+const TasksPanel = ({ tasks, adminMode = false, threadId }: TasksPanelProps) => {
+  const [localTasks, setLocalTasks] = useState(tasks);
 
-const TasksPanel = ({ tasks }: TasksPanelProps) => {
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
+
+  const handleTaskUpdate = (taskId: string, updatedTask: Task) => {
+    setLocalTasks(prev => ({
+      ...prev,
+      [taskId]: updatedTask
+    }));
+  };
+
   return (
     <div className="w-[32rem] border-l border-gray-800 flex flex-col h-screen">
       <div className="p-4 border-b border-gray-800">
         <h2 className="text-lg font-semibold">Tasks</h2>
       </div>
       <div className="flex-1 overflow-y-auto min-h-0 p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-800/20 [&::-webkit-scrollbar-thumb]:bg-gray-700 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full">
-        {Object.entries(tasks).map(([id, task]) => (
-          <TaskCard key={id} task={task} />
+        {Object.entries(localTasks).map(([id, task]) => (
+          <TaskCard 
+            key={id} 
+            task={task}
+            tasks={localTasks}
+            adminMode={adminMode}
+            onTaskUpdate={handleTaskUpdate}
+            threadId={threadId}
+          />
         ))}
       </div>
     </div>

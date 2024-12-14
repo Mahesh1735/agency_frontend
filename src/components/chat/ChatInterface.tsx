@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ChatMessage from './ChatMessage';
 import { Thread, createThread, updateThread } from '../../services/threadService';
 import { useThreads } from '../../contexts/ThreadContext';
+import TasksPanel from '../tasks/TasksPanel';
 
 interface ApiMessage {
   content: string;
@@ -256,83 +257,95 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [tasks, onTasksUpdate]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-gray-950">
-      {/* Chat Header */}
-      <div className="border-b border-gray-800/60 backdrop-blur-xl bg-gray-900/30 p-4 z-10">
-        <div className="max-w-3xl mx-auto flex items-center gap-2">
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleTitleSave}
-              onKeyDown={handleTitleKeyPress}
-              className="text-lg font-medium bg-gray-800 text-gray-100 px-2 py-1 rounded border border-gray-700 focus:outline-none focus:border-blue-500"
-            />
-          ) : (
-            <>
-              <h2 className="text-lg font-medium text-gray-100">{title}</h2>
-              <button
-                onClick={handleTitleEdit}
-                className="p-1 hover:bg-gray-800 rounded transition-colors text-gray-400 hover:text-white"
-              >
-                <Pencil size={16} />
-              </button>
-            </>
-          )}
-          <p className="text-sm text-gray-400 ml-auto">Started 2 minutes ago</p>
+    <div className="flex h-full overflow-hidden bg-gray-950">
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Chat Header */}
+        <div className="border-b border-gray-800/60 backdrop-blur-xl bg-gray-900/30 p-4 z-10">
+          <div className="max-w-3xl mx-auto flex items-center gap-2">
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleTitleSave}
+                onKeyDown={handleTitleKeyPress}
+                className="text-lg font-medium bg-gray-800 text-gray-100 px-2 py-1 rounded border border-gray-700 focus:outline-none focus:border-blue-500"
+              />
+            ) : (
+              <>
+                <h2 className="text-lg font-medium text-gray-100">{title}</h2>
+                <button
+                  onClick={handleTitleEdit}
+                  className="p-1 hover:bg-gray-800 rounded transition-colors text-gray-400 hover:text-white"
+                >
+                  <Pencil size={16} />
+                </button>
+              </>
+            )}
+            <p className="text-sm text-gray-400 ml-auto">Started 2 minutes ago</p>
+          </div>
         </div>
-      </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-3xl mx-auto space-y-6 px-4 py-6">
-          {isLoadingMessages ? (
-            <div className="text-center text-gray-400">Loading messages...</div>
-          ) : messageError ? (
-            <div className="text-center text-red-400">{messageError}</div>
-          ) : (
-            <>
-              {messages.map((msg) => (
-                <ChatMessage key={msg.id} message={msg} />
-              ))}
-              <div ref={messagesEndRef} />
-            </>
-          )}
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="max-w-3xl mx-auto space-y-6 px-4 py-6">
+            {isLoadingMessages ? (
+              <div className="text-center text-gray-400">Loading messages...</div>
+            ) : messageError ? (
+              <div className="text-center text-red-400">{messageError}</div>
+            ) : (
+              <>
+                {messages.map((msg) => (
+                  <ChatMessage key={msg.id} message={msg} />
+                ))}
+                <div ref={messagesEndRef} />
+              </>
+            )}
+          </div>
         </div>
-      </div>
-      
-      {/* Input Area */}
-      <div className="border-t border-gray-800/60 bg-gray-900/30 backdrop-blur-xl p-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="relative flex items-end bg-gray-800 rounded-xl shadow-lg border border-gray-700/50">
-            <button className="absolute bottom-3 left-3 p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
-              <Smile size={20} />
-            </button>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Message Hanu.ai..."
-              className="w-full pl-14 pr-24 py-4 bg-transparent border-none focus:ring-0 resize-none max-h-48 text-base placeholder-gray-500"
-              rows={1}
-              style={{ minHeight: '56px' }}
-            />
-            <div className="absolute bottom-3 right-3 flex items-center gap-2">
-              <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
-                <Paperclip size={20} />
+        
+        {/* Input Area */}
+        <div className="border-t border-gray-800/60 bg-gray-900/30 backdrop-blur-xl p-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="relative flex items-end bg-gray-800 rounded-xl shadow-lg border border-gray-700/50">
+              <button className="absolute bottom-3 left-3 p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
+                <Smile size={20} />
               </button>
-              <button 
-                onClick={handleSendMessage}
-                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
-              >
-                <Send size={20} />
-              </button>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Message Hanu.ai..."
+                className="w-full pl-14 pr-24 py-4 bg-transparent border-none focus:ring-0 resize-none max-h-48 text-base placeholder-gray-500"
+                rows={1}
+                style={{ minHeight: '56px' }}
+              />
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
+                  <Paperclip size={20} />
+                </button>
+                <button 
+                  onClick={handleSendMessage}
+                  className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
+                >
+                  <Send size={20} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Tasks Panel */}
+      {threadId && (
+        <TasksPanel 
+          tasks={tasks} 
+          adminMode={adminMode} 
+          threadId={threadId}
+        />
+      )}
     </div>
   );
 };

@@ -57,7 +57,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ adminMode = false }) => {
             )}
           </Routes>
         </div>
-        <TasksPanel tasks={tasks} />
+        {/* <TasksPanel tasks={tasks} adminMode={adminMode} /> */}
       </div>
     </div>
   );
