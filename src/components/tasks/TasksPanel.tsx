@@ -57,7 +57,7 @@ const TaskCard: React.FC<{
         [task.id]: editedTask
       };
 
-      const response = await fetch('http://127.0.0.1:8080/update_state', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/update_state`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

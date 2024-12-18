@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ExternalLink, PlayCircle, Image as ImageIcon, FileText, X, Download, Save } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ExternalLink, PlayCircle, Image as ImageIcon, FileText, X, Download, Save, Upload } from 'lucide-react';
 import { TaskResult } from './TasksPanel';
+import { uploadFileToS3 } from '../../services/s3Service';
 
 interface TaskResultPopupProps {
   result: TaskResult;
@@ -13,11 +14,13 @@ const TaskResultPopup: React.FC<TaskResultPopupProps> = ({ result, onClose, edit
   const [activeMediaType, setActiveMediaType] = useState<'videos' | 'images' | 'documents'>('videos');
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [editedResult, setEditedResult] = useState<TaskResult>(result);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mediaTypes = [
-    { type: 'videos', urls: editedResult.videos_url, icon: <PlayCircle size={16} />, label: 'Videos' },
-    { type: 'images', urls: editedResult.images_url, icon: <ImageIcon size={16} />, label: 'Images' },
-    { type: 'documents', urls: editedResult.documents_url, icon: <FileText size={16} />, label: 'Documents' }
+    { type: 'videos', urls: editedResult.videos_url, icon: <PlayCircle size={16} />, label: 'Videos', accept: 'video/*' },
+    { type: 'images', urls: editedResult.images_url, icon: <ImageIcon size={16} />, label: 'Images', accept: 'image/*' },
+    { type: 'documents', urls: editedResult.documents_url, icon: <FileText size={16} />, label: 'Documents', accept: '.pdf,.doc,.docx,.txt' }
   ] as const;
 
   // Set initial active media type to first non-empty type
@@ -64,6 +67,34 @@ const TaskResultPopup: React.FC<TaskResultPopupProps> = ({ result, onClose, edit
       ...prev,
       [`${type}_url`]: prev[`${type}_url`].filter((_, i) => i !== index)
     }));
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(file => uploadFileToS3(file));
+      const uploadedUrls = await Promise.all(uploadPromises);
+      
+      setEditedResult(prev => ({
+        ...prev,
+        [`${activeMediaType}_url`]: [...prev[`${activeMediaType}_url`], ...uploadedUrls]
+      }));
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      // You might want to add a toast notification here
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -135,7 +166,7 @@ const TaskResultPopup: React.FC<TaskResultPopupProps> = ({ result, onClose, edit
         </div>
 
         <div className="p-6">
-          {/* Media Tabs - Modified to show only tabs with content in user mode */}
+          {/* Media Tabs */}
           <div className="flex gap-8 mb-8 border-b border-gray-700">
             {mediaTypes
               .filter(({ urls }) => editable || urls.length > 0)
@@ -160,15 +191,33 @@ const TaskResultPopup: React.FC<TaskResultPopupProps> = ({ result, onClose, edit
           </div>
 
           {/* Media Gallery Grid */}
-          {mediaTypes.map(({ type, urls }) => type === activeMediaType && (
+          {mediaTypes.map(({ type, urls, accept }) => type === activeMediaType && (
             <div key={type} className="space-y-4">
               {editable && (
-                <button
-                  onClick={() => handleAddUrl(type)}
-                  className="w-full px-4 py-2 rounded-lg border border-dashed border-gray-600 hover:border-blue-500 text-gray-400 hover:text-blue-500 transition-colors"
-                >
-                  Add {type.slice(0, -1)} URL
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => handleAddUrl(type)}
+                    className="flex-1 px-4 py-2 rounded-lg border border-dashed border-gray-600 hover:border-blue-500 text-gray-400 hover:text-blue-500 transition-colors"
+                  >
+                    Add {type.slice(0, -1)} URL
+                  </button>
+                  <button
+                    onClick={handleUploadClick}
+                    disabled={isUploading}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload size={20} />
+                    <span>{isUploading ? 'Uploading...' : 'Upload Files'}</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={accept}
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
               )}
               <div className="grid grid-cols-2 gap-6">
                 {urls.map((url, index) => (

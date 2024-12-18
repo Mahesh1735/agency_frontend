@@ -74,7 +74,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessageError(null);
       
       try {
-        const response = await fetch(`http://127.0.0.1:8080/${adminMode ? 'update_state' : 'chat'}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/${adminMode ? 'update_state' : 'chat'}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     // Now make the API call with the guaranteed thread ID
     try {
-      const response = await fetch(`http://127.0.0.1:8080/${adminMode ? 'update_state' : 'chat'}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/${adminMode ? 'update_state' : 'chat'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

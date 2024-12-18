@@ -126,7 +126,7 @@ const NewChatOfferings: React.FC<NewChatOfferingsProps> = ({ onSelect, autoSend 
   return (
     <div className="max-w-4xl mx-auto w-full px-4 py-8">
       <h2 className="text-2xl font-bold text-white mb-2">Welcome to Hanu.ai</h2>
-      <p className="text-gray-400 mb-8">Choose a category to get started with AI-powered business solutions</p>
+      <p className="text-gray-400 mb-8">Harness the power of AI to automate, optimize, and grow your business.</p>
 
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg mb-8">
