@@ -6,6 +6,7 @@ import ChatMessage from './ChatMessage';
 import { Thread, createThread, updateThread } from '../../services/threadService';
 import { useThreads } from '../../contexts/ThreadContext';
 import TasksPanel from '../tasks/TasksPanel';
+import NewChatOfferings from './NewChatOfferings';
 
 interface ApiMessage {
   content: string;
@@ -51,6 +52,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [messageError, setMessageError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Record<string, any>>({});
+  const [isSending, setIsSending] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -130,6 +132,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleSendMessage = async () => {
     if (!message.trim() || !currentUser) return;
 
+    setIsSending(true);
     let currentThreadId = threadId;
 
     // Create new thread if needed
@@ -194,6 +197,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages([WELCOME_MESSAGE]);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -284,14 +289,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </button>
               </>
             )}
-            <p className="text-sm text-gray-400 ml-auto">Started 2 minutes ago</p>
           </div>
         </div>
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-3xl mx-auto space-y-6 px-4 py-6">
-            {isLoadingMessages ? (
+            {!threadId && !adminMode ? (
+              <>
+                <NewChatOfferings 
+                  onSelect={(topic) => setMessage(`${topic}`)} 
+                />
+                <div className="mt-8">
+                  <ChatMessage key={WELCOME_MESSAGE.id} message={WELCOME_MESSAGE} />
+                </div>
+              </>
+            ) : isLoadingMessages ? (
               <div className="text-center text-gray-400">Loading messages...</div>
             ) : messageError ? (
               <div className="text-center text-red-400">{messageError}</div>
@@ -310,6 +323,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="border-t border-gray-800/60 bg-gray-900/30 backdrop-blur-xl p-4">
           <div className="max-w-3xl mx-auto">
             <div className="relative flex items-end bg-gray-800 rounded-xl shadow-lg border border-gray-700/50">
+              {isSending && (
+                <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm rounded-xl flex items-center justify-center z-10">
+                  <div className="w-full max-w-[80%] h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full animate-loading-bar"
+                      style={{
+                        width: '30%',
+                        animation: 'loading-bar 1s ease-in-out infinite'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
               <button className="absolute bottom-3 left-3 p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
                 <Smile size={20} />
               </button>
@@ -321,14 +347,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 className="w-full pl-14 pr-24 py-4 bg-transparent border-none focus:ring-0 resize-none max-h-48 text-base placeholder-gray-500"
                 rows={1}
                 style={{ minHeight: '56px' }}
+                disabled={isSending}
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white">
-                  <Paperclip size={20} />
-                </button>
                 <button 
                   onClick={handleSendMessage}
-                  className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
+                  aria-label="Send message"
+                  disabled={isSending}
+                  className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white disabled:opacity-50"
                 >
                   <Send size={20} />
                 </button>

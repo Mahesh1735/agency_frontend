@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExternalLink, PlayCircle, Image as ImageIcon, FileText, X, Download, Save } from 'lucide-react';
 import { TaskResult } from './TasksPanel';
 
@@ -19,6 +19,16 @@ const TaskResultPopup: React.FC<TaskResultPopupProps> = ({ result, onClose, edit
     { type: 'images', urls: editedResult.images_url, icon: <ImageIcon size={16} />, label: 'Images' },
     { type: 'documents', urls: editedResult.documents_url, icon: <FileText size={16} />, label: 'Documents' }
   ] as const;
+
+  // Set initial active media type to first non-empty type
+  useEffect(() => {
+    if (!editable) {
+      const firstNonEmptyType = mediaTypes.find(({ urls }) => urls.length > 0);
+      if (firstNonEmptyType) {
+        setActiveMediaType(firstNonEmptyType.type);
+      }
+    }
+  }, [editable, result]);
 
   // Close if clicking outside the popup
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -125,26 +135,28 @@ const TaskResultPopup: React.FC<TaskResultPopupProps> = ({ result, onClose, edit
         </div>
 
         <div className="p-6">
-          {/* Media Tabs */}
+          {/* Media Tabs - Modified to show only tabs with content in user mode */}
           <div className="flex gap-8 mb-8 border-b border-gray-700">
-            {mediaTypes.map(({ type, icon, label, urls }) => (
-              <button
-                key={type}
-                onClick={() => {
-                  setActiveMediaType(type);
-                  setCurrentMediaIndex(0);
-                }}
-                className={`flex items-center gap-2 pb-4 px-2 text-base transition-colors ${
-                  activeMediaType === type 
-                    ? 'text-blue-400 border-b-2 border-blue-400' 
-                    : 'text-gray-400 hover:text-gray-300'
-                }`}
-              >
-                {React.cloneElement(icon, { size: 20 })}
-                <span>{label}</span>
-                <span className="text-sm text-gray-500">({urls.length})</span>
-              </button>
-            ))}
+            {mediaTypes
+              .filter(({ urls }) => editable || urls.length > 0)
+              .map(({ type, icon, label, urls }) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    setActiveMediaType(type);
+                    setCurrentMediaIndex(0);
+                  }}
+                  className={`flex items-center gap-2 pb-4 px-2 text-base transition-colors ${
+                    activeMediaType === type 
+                      ? 'text-blue-400 border-b-2 border-blue-400' 
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  {React.cloneElement(icon, { size: 20 })}
+                  <span>{label}</span>
+                  <span className="text-sm text-gray-500">({urls.length})</span>
+                </button>
+              ))}
           </div>
 
           {/* Media Gallery Grid */}
