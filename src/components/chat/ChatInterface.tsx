@@ -7,6 +7,7 @@ import { Thread, createThread, updateThread } from '../../services/threadService
 import { useThreads } from '../../contexts/ThreadContext';
 import TasksPanel from '../tasks/TasksPanel';
 import NewChatOfferings from './NewChatOfferings';
+import { ResourcePanel } from '../ResourcePanel';
 
 interface ApiMessage {
   content: string;
@@ -53,6 +54,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [messageError, setMessageError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Record<string, any>>({});
   const [isSending, setIsSending] = useState(false);
+  const [messageInput, setMessageInput] = useState('');
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +133,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [threadId, threads]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !currentUser) return;
+    if (!messageInput.trim() || !currentUser) return;
 
     setIsSending(true);
     let currentThreadId = threadId;
@@ -140,7 +143,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       try {
         const newThread = await createThread(
           currentUser.uid,
-          message.length > 30 ? message.slice(0, 30) + '...' : message
+          messageInput.length > 30 ? messageInput.slice(0, 30) + '...' : messageInput
         );
         addThread(newThread);
         currentThreadId = newThread.id;
@@ -159,7 +162,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: message.trim(),
+          query: messageInput.trim(),
           thread_id: currentThreadId
         }),
       });
@@ -185,7 +188,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       // Always include welcome message at the start
       setMessages([WELCOME_MESSAGE, ...formattedMessages]);
-      setMessage('');
+      setMessageInput(''); // Clear the input after sending
 
       // Update thread date after successful message
       try {
@@ -261,8 +264,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [tasks, onTasksUpdate]);
 
+  const handleResourceSelect = (title: string, url: string) => {
+    const resourceText = `${title} (${url})`;
+    setMessageInput(prev => {
+      const separator = prev.trim() ? ' ' : '';
+      return prev.trim() + separator + resourceText;
+    });
+    if (messageInputRef.current) {
+      messageInputRef.current.focus();
+    }
+  };
+
   return (
     <div className="flex h-full overflow-hidden bg-gray-950">
+      {/* Resource Panel - only show in non-admin mode */}
+      {!adminMode && (
+        <div className="w-[20%] min-w-[250px]">
+          <ResourcePanel 
+            onResourceSelect={handleResourceSelect} 
+            autoInsertLatest={true}
+          />
+        </div>
+      )}
+
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Chat Header */}
@@ -293,12 +317,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-800/20 [&::-webkit-scrollbar-thumb]:bg-gray-700 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full">
           <div className="max-w-3xl mx-auto space-y-6 px-4 py-6">
             {!threadId && !adminMode ? (
               <>
                 <NewChatOfferings 
-                  onSelect={(topic) => setMessage(`${topic}`)} 
+                  onSelect={(topic) => setMessageInput(`${topic}`)} 
                 />
                 <div className="mt-8">
                   <ChatMessage key={WELCOME_MESSAGE.id} message={WELCOME_MESSAGE} />
@@ -340,8 +364,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <Smile size={20} />
               </button>
               <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                ref={messageInputRef}
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Message Hanu.ai..."
                 className="w-full pl-14 pr-24 py-4 bg-transparent border-none focus:ring-0 resize-none max-h-48 text-base placeholder-gray-500"
@@ -350,6 +375,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 disabled={isSending}
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    const addResourceButton = document.querySelector('[data-testid="add-resource-button"]');
+                    if (addResourceButton instanceof HTMLButtonElement) {
+                      addResourceButton.click();
+                    }
+                  }}
+                  aria-label="Add resource"
+                  disabled={isSending}
+                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white disabled:opacity-50"
+                >
+                  <Paperclip size={20} />
+                </button>
                 <button 
                   onClick={handleSendMessage}
                   aria-label="Send message"
