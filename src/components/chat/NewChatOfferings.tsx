@@ -15,7 +15,10 @@ import {
   Target,
   TrendingUp,
   MessageSquare,
-  Search
+  Search,
+  PackageCheck,
+  Users2,
+  Wrench
 } from 'lucide-react';
 
 const tabs = [
@@ -31,8 +34,8 @@ const tabs = [
         color: 'from-pink-500 to-purple-500'
       },
       {
-        title: 'Facebook Ads',
-        description: 'Create targeted ads for the best ROI',
+        title: 'Facebook Content Creator',
+        description: 'Create posts, videos and stories to grow your Facebook page',
         icon: <Facebook className="w-6 h-6" />,
         color: 'from-blue-500 to-blue-600'
       },
@@ -51,26 +54,82 @@ const tabs = [
     ]
   },
   {
-    id: 'operations',
-    label: 'Operations',
-    icon: <Building2 className="w-5 h-5" />,
+    id: 'customer_service',
+    label: 'Customer Service',
+    icon: <MessageSquare className="w-5 h-5" />,
     offerings: [
       {
-        title: 'Process Optimization',
-        description: 'Streamline your business operations for efficiency',
-        icon: <BarChart3 className="w-6 h-6" />,
+        title: 'Order Status Chatbot',
+        description: 'Instantly retrieves and provides real-time delivery updates to customers without human support.',
+        icon: <MessageSquare className="w-6 h-6" />,
+        color: 'from-blue-500 to-indigo-500',
+        comingSoon: true
+      },
+      {
+        title: 'Product Return Processing',
+        description: 'Efficiently handles return requests, verifies eligibility, and issues return labels automatically.',
+        icon: <PackageCheck className="w-6 h-6" />,
         color: 'from-green-500 to-emerald-500',
         comingSoon: true
       },
       {
-        title: 'Team Management',
-        description: 'Improve team collaboration and productivity',
-        icon: <Users className="w-6 h-6" />,
-        color: 'from-blue-500 to-indigo-500',
+        title: 'Troubleshooting Wizard',
+        description: 'Guides customers through step-by-step fixes for common issues, escalating only when necessary.',
+        icon: <Wrench className="w-6 h-6" />,
+        color: 'from-orange-500 to-red-500',
+        comingSoon: true
+      },
+      {
+        title: 'Proactive Order Follow-Up',
+        description: 'Automate inventory tracking, restocking, and order fulfillment.',
+        icon: <PackageCheck className="w-6 h-6" />,
+        color: 'from-purple-500 to-violet-500',
         comingSoon: true
       }
     ]
   },
+  {
+    id: 'recruiting',
+    label: 'Recruiting',
+    icon: <Users className="w-5 h-5" />,
+    offerings: [
+      {
+        title: 'AI-Led Candidate Screening',
+        description: 'Automatically reviews resumes, filters out unqualified candidates, and initiates assessments to streamline hiring.',
+        icon: <Users className="w-6 h-6" />,
+        color: 'from-blue-500 to-indigo-500',
+        comingSoon: true
+      },
+      {
+        title: 'Onboarding Setup',
+        description: 'Automates initial onboarding steps—welcome emails, IT setups, training enrollments—ensuring a seamless start for new hires.',
+        icon: <Users2 className="w-6 h-6" />,
+        color: 'from-yellow-500 to-orange-500',
+        comingSoon: true
+      }
+    ]
+  },
+  // {
+  //   id: 'operations',
+  //   label: 'Operations',
+  //   icon: <Building2 className="w-5 h-5" />,
+  //   offerings: [
+  //     {
+  //       title: 'Process Optimization',
+  //       description: 'Streamline your business operations for efficiency',
+  //       icon: <BarChart3 className="w-6 h-6" />,
+  //       color: 'from-green-500 to-emerald-500',
+  //       comingSoon: true
+  //     },
+  //     {
+  //       title: 'Team Management',
+  //       description: 'Improve team collaboration and productivity',
+  //       icon: <Users className="w-6 h-6" />,
+  //       color: 'from-blue-500 to-indigo-500',
+  //       comingSoon: true
+  //     }
+  //   ]
+  // },
   {
     id: 'finance',
     label: 'Finance',
